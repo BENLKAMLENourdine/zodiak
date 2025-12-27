@@ -1,8 +1,8 @@
 
 import express from 'express';
 import 'dotenv/config';
+
 import { UserController } from './controllers/user.controller';
-import { UserService } from './services/user/user.service';
 
 import container from '../core/index';
 
@@ -12,8 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/user-info', (req, res) => {
-    const userService = container.resolve<UserService>('UserService');
-    const userController = new UserController(userService);
+    const userController = container.resolve<UserController>('UserController');
     try {
         const userInfo = userController.getUser();
         res.json(userInfo);

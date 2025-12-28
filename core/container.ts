@@ -1,11 +1,21 @@
+
+type Constructor<T> = new (...args: any[]) => T;
+
 export class Container {
-    private services: Map<string, any> = new Map();
+    private instances: Map<Constructor<any>, any> = new Map();
 
-    register<T>(name: string, service: T): void {
-        this.services.set(name, service)
-    }
+    get<T>(Class: Constructor<T>): T {
+        console.log(`Resolving ${Class.name}`);
+        if(this.instances.has(Class)) {
+            return this.instances.get(Class);
+        }
 
-    resolve<T>(name: string): T {
-        return this.services.get(name);
+        const paramTypes = Reflect.getMetadata('design:paramtypes', Class) || [];
+        console.log(`Dependencies for ${Class.name}:`, paramTypes);
+        const dependencies = paramTypes.map((param: any) => this.get(param));
+
+        const instance = new Class(...dependencies);
+        this.instances.set(Class, instance);
+        return instance;
     }
 }

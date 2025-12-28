@@ -1,6 +1,8 @@
+import { Injectable } from "../../../core/@Injectbale";
 import { User } from "../../../src/controllers/dto/response/get-user-info.dto";
 import { AuthService } from "../auth/auth.service";
 
+@Injectable()
 export class UserService {
     constructor(private authService: AuthService) {}
     getUser(): User {

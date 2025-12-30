@@ -1,5 +1,6 @@
 
 type Constructor<T> = new (...args: any[]) => T;
+import 'reflect-metadata';
 
 export class Container {
     private instances: Map<Constructor<any>, any> = new Map();

@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { beforeEach, describe, expect, it } from "vitest";
 import { Container } from "./container";
 import { Injectable } from "./@Injectbale";

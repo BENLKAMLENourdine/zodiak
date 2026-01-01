@@ -16,8 +16,13 @@ app.use(express.urlencoded({ extended: true }));
 // Controllers
 const userController = container.get(UserController);
 
-app.get('/user-info', userController.getUser.bind(userController));
+app.get('/users', userController.getUsers.bind(userController));
+app.post('/users', userController.createUser.bind(userController));
+app.put('/users/:id', userController.updateUser.bind(userController));
+app.delete('/users/:id', userController.deleteUser.bind(userController));
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
 });
+
+export default app;

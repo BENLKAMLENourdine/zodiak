@@ -1,28 +1,13 @@
-import 'reflect-metadata';
+import "reflect-metadata";
 
-import express from 'express';
-import 'dotenv/config';
+import express from "express";
+import "dotenv/config";
 
-import { UserController } from './controllers/user.controller';
-
-import {Container} from '../core/container';
-
-const container = new Container();
+import { Server } from "../core";
+import { AppModule } from "./app.module";
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Controllers
-const userController = container.get(UserController);
-
-app.get('/users', userController.getUsers.bind(userController));
-app.post('/users', userController.createUser.bind(userController));
-app.put('/users/:id', userController.updateUser.bind(userController));
-app.delete('/users/:id', userController.deleteUser.bind(userController));
-
-app.listen(process.env.PORT, () => {
-    console.log(`Server is running on port ${process.env.PORT}`);
-});
-
-export default app;
+export default Server.create(app, AppModule, process.env.PORT);

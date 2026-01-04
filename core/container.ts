@@ -1,5 +1,5 @@
-export type Constructor<T> = new (...args: unknown[]) => T;
-import chalk from "chalk";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Constructor<T> = new (...args: any[]) => T;
 
 export class Container {
   private instances: Map<Constructor<unknown>, unknown> = new Map();
@@ -16,11 +16,6 @@ export class Container {
 
     const instance = new Class(...dependencies);
     this.instances.set(Class, instance);
-    console.log(
-      chalk.hex("#FF00FF")(
-        `[INJECTABLE] ${Class.name} has been registered in the container.`,
-      ),
-    );
     return instance;
   }
 }

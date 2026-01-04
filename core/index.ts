@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import chalk from "chalk";
 import { Constructor, Container } from "./container";
 import core from "express";
@@ -8,6 +5,7 @@ import { Route } from "./@Route";
 import { AppError, HTTP_ERRORS } from "./utils/errors";
 import { AppModule } from "../src/app.module";
 import { ModuleMetadata } from "./@Module";
+import { Middleware } from "./@Middleware";
 
 export type Method = "get" | "post" | "put" | "delete" | "patch";
 
@@ -15,6 +13,7 @@ export class Server {
   private controllers: Constructor<unknown>[];
   private providers: Constructor<unknown>[];
   private imports: Constructor<unknown>[];
+  private middlewares: Constructor<unknown>[];
 
   private container: Container;
   private app: core.Express;
@@ -24,10 +23,12 @@ export class Server {
     appModule: typeof AppModule,
     port: string,
     app: core.Express,
+    middlewares: Constructor<unknown>[] = [],
   ) {
     this.container = new Container();
     this.app = app;
     this.port = port;
+    this.middlewares = middlewares;
 
     const moduleMetadata = Reflect.getMetadata(
       "module:metadata",
@@ -43,6 +44,22 @@ export class Server {
     this.imports = [];
 
     this.scanModuleMetadata(moduleMetadata);
+  }
+
+  public static create(
+    app: core.Express,
+    appModule: typeof AppModule,
+    port: string | undefined,
+    middlewares: Constructor<unknown>[] = [],
+  ): core.Express {
+    const server = new Server(appModule, port || "3000", app, middlewares);
+
+    server.registerProviders();
+    server.registerGlobalMiddlewares();
+    server.registerControllers();
+    server.start();
+
+    return server.app;
   }
 
   private scanModuleMetadata(moduleMetadata: ModuleMetadata) {
@@ -66,20 +83,6 @@ export class Server {
     }
   }
 
-  public static create(
-    app: core.Express,
-    appModule: typeof AppModule,
-    port: string | undefined,
-  ): core.Express {
-    const server = new Server(appModule, port || "3000", app);
-
-    server.registerProviders();
-    server.registerControllers();
-    server.start();
-
-    return server.app;
-  }
-
   private start() {
     this.app.listen(this.port, () => {
       console.log(`Server is running on port ${this.port}`);
@@ -97,16 +100,46 @@ export class Server {
     }
   }
 
+  private registerGlobalMiddlewares() {
+    for (const middleware of this.middlewares) {
+      const isMiddleware = Reflect.getMetadata(
+        "isMiddleware",
+        middleware,
+      ) as boolean;
+
+      if (isMiddleware) {
+        console.log(
+          chalk.hex("#FBBF24")(
+            `[MIDDLEWARE] Applying middleware: ${middleware.name}`,
+          ),
+        );
+        const middlewareInstance = this.container.get(middleware) as Middleware;
+        this.app.use(
+          (req: core.Request, res: core.Response, next: core.NextFunction) => {
+            middlewareInstance.use(req, res, next);
+          },
+        );
+      } else {
+        console.log(
+          chalk.hex("#FF0000")(
+            `[BOOTSTRAP][ERROR] ${middleware.name} is not a valid middleware.`,
+          ),
+        );
+      }
+    }
+  }
+
   private registerControllers() {
     for (const controller of this.controllers) {
       console.log(
         chalk.hex("#06B6D4")(
-          `[CONTROLLER] Registering routes for controller: ${controller.name}`,
+          `[CONTROLLER] Registering controller: ${controller.name}`,
         ),
       );
       const instance = this.container.get(controller);
 
-      const prefix = Reflect.getMetadata("controller:prefix", controller) || "";
+      const prefix = (Reflect.getMetadata("controller:prefix", controller) ||
+        "") as string;
       const routes = (Reflect.getMetadata("controller:routes", controller) ||
         []) as Route[];
 
@@ -121,9 +154,10 @@ export class Server {
 
         this.app[route.method.toLowerCase() as Method](
           fullPath,
+
           async (req: core.Request, res: core.Response) => {
             try {
-              const handler = (instance as any)[
+              const handler = (instance as object)[
                 route.handlerName as keyof typeof instance
               ] as (
                 req: core.Request,

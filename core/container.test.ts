@@ -1,4 +1,4 @@
-import 'reflect-metadata';
+import "reflect-metadata";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Container } from "./container";
 import { Injectable } from "./@Injectbale";
@@ -59,7 +59,7 @@ describe("Container Tests", () => {
 
   it("should return undefined for unregistered dependencies", () => {
     class H {
-      constructor(public unknownDep: any) {}
+      constructor(public unknownDep: unknown) {}
     }
 
     const instanceH = container.get(H);
